@@ -1,96 +1,310 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Woftom's Christmas Tree</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-End Christmas Tree</title>
     <style>
         body {
-            background-color: #0d1b2a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
             overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            color: white;
+            background: #000;
+            font-family: 'Cinzel', serif; /* 引入一种优雅的衬线字体 */
         }
-        .container { text-align: center; position: relative; z-index: 10;}
-        h1 { margin-bottom: 20px; text-shadow: 0 0 10px #ffd700; }
-        
-        .tree {
-            position: relative;
-            width: 0; height: 0;
-            border-left: 50px solid transparent;
-            border-right: 50px solid transparent;
-            border-bottom: 100px solid #2d6a4f;
-            margin: 0 auto;
+
+        canvas {
+            display: block;
         }
-        .tree:after {
-            content: ''; position: absolute; top: 80px; left: -70px;
-            width: 0; height: 0;
-            border-left: 70px solid transparent;
-            border-right: 70px solid transparent;
-            border-bottom: 120px solid #2d6a4f;
-        }
-        .tree:before {
-            content: ''; position: absolute; top: 180px; left: -90px;
-            width: 0; height: 0;
-            border-left: 90px solid transparent;
-            border-right: 90px solid transparent;
-            border-bottom: 140px solid #2d6a4f;
-        }
-        
-        /* 装饰彩灯 */
-        .light {
+
+        /* 背景渐变，营造深邃的夜空感 */
+        .bg-gradient {
             position: absolute;
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            animation: blink 1s infinite alternate;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
+            z-index: -1;
         }
-        @keyframes blink { from {opacity: 0.5; box-shadow: 0 0 5px currentColor;} to {opacity: 1; box-shadow: 0 0 20px currentColor;} }
-        
-        /* 雪花 */
-        .snowflake {
-            position: absolute; top: -10px;
-            background: white; border-radius: 50%; opacity: 0.8;
-            animation: fall linear infinite;
+
+        /* 中心的文字祝福 */
+        .message {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 215, 0, 0.8); /* 金色 */
+            text-align: center;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-weight: 300;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            animation: fadeIn 3s ease-in-out;
         }
-        @keyframes fall { to { transform: translateY(105vh); } }
+
+        .sub-message {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 10px;
+            letter-spacing: 3px;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
     </style>
+    <!-- 引入Google Fonts增加高级感 -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Merry Christmas! <br> from Woftom</h1>
-        <div class="tree" id="tree"></div>
+
+    <div class="bg-gradient"></div>
+    
+    <div class="message">
+        Merry Christmas
+        <div class="sub-message">2024 LUXURY EDITION</div>
     </div>
 
+    <canvas id="treeCanvas"></canvas>
+
     <script>
-        // 生成彩灯
-        const tree = document.getElementById('tree');
-        const colors = ['#ef233c', '#ffd700', '#3a86ff', '#8338ec'];
-        for(let i=0; i<15; i++) {
-            const light = document.createElement('div');
-            light.className = 'light';
-            light.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
-            light.style.top = Math.random() * 250 + 'px';
-            light.style.left = (Math.random() * 80 - 40) + 'px';
-            light.style.animationDuration = (Math.random() + 0.5) + 's';
-            light.style.color = light.style.backgroundColor; //用于阴影颜色
-            tree.appendChild(light);
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let snowParticles = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+        
+        // 配置参数
+        const CONFIG = {
+            particleCount: 800, // 树的粒子数量
+            snowCount: 200,     // 雪花数量
+            treeHeight: 0.6,    // 树高比例
+            baseRadius: 150,    // 底部半径
+            colorBase: 200,     // 色相基准 (200=蓝色系, 50=金色系)
+            focalLength: 400    // 焦距，控制透视感
+        };
+
+        // 初始化画布尺寸
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            // 响应式调整半径
+            CONFIG.baseRadius = Math.min(width, height) * 0.25;
         }
 
-        // 生成雪花
-        function createSnow() {
-            const snow = document.createElement('div');
-            snow.className = 'snowflake';
-            snow.style.left = Math.random() * 100 + 'vw';
-            snow.style.width = snow.style.height = (Math.random() * 5 + 2) + 'px';
-            snow.style.animationDuration = (Math.random() * 3 + 2) + 's';
-            document.body.appendChild(snow);
-            setTimeout(() => snow.remove(), 5000);
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 鼠标交互
+        document.addEventListener('mousemove', (e) => {
+            // 归一化鼠标位置 -1 到 1
+            mouseX = (e.clientX / width) * 2 - 1;
+            mouseY = -(e.clientY / height) * 2 + 1;
+        });
+
+        // 粒子类
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'tree' or 'snow'
+                this.reset();
+            }
+
+            reset() {
+                if (this.type === 'tree') {
+                    // 树形螺旋算法
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.heightPerc = Math.random(); // 0 是底部, 1 是顶部
+                    
+                    // 螺旋上升: 越往上半径越小
+                    // 使用 pow 让粒子更多聚集在底部，形成稳重的三角形
+                    this.radius = CONFIG.baseRadius * (1 - this.heightPerc); 
+                    
+                    // 增加螺旋密度
+                    this.angle += this.heightPerc * 20; 
+
+                    this.y = (this.heightPerc - 0.5) * height * CONFIG.treeHeight * -1; // Y轴位置
+                    
+                    // 随机一些漂移
+                    this.speed = Math.random() * 0.01 + 0.005;
+                    this.size = Math.random() * 2 + 1;
+                    
+                    // 颜色：金色(45-55) 到 青色(180-200) 混合
+                    const isGold = Math.random() > 0.6;
+                    this.hue = isGold ? 45 + Math.random() * 10 : 190 + Math.random() * 20;
+                    this.saturation = isGold ? 80 : 60;
+                    this.lightness = isGold ? 60 + Math.random() * 20 : 80;
+                    this.alpha = Math.random() * 0.5 + 0.3;
+
+                } else {
+                    // 雪花
+                    this.x = (Math.random() - 0.5) * width * 1.5;
+                    this.y = -height/2 - Math.random() * height; // 从上方开始
+                    this.z = (Math.random() - 0.5) * 500;
+                    this.vy = Math.random() * 2 + 1; // 下落速度
+                    this.size = Math.random() * 1.5 + 0.5;
+                    this.alpha = Math.random() * 0.5 + 0.1;
+                }
+            }
+
+            update(rotationY) {
+                if (this.type === 'tree') {
+                    // 树的自转 + 鼠标影响
+                    this.angle += this.speed; 
+                    
+                    // 将极坐标转换为笛卡尔坐标 (3D)
+                    // x = r * cos(theta), z = r * sin(theta)
+                    const x3d = Math.cos(this.angle) * this.radius;
+                    const z3d = Math.sin(this.angle) * this.radius;
+                    
+                    // 绕Y轴旋转矩阵 (整体旋转)
+                    // 加上鼠标带来的额外旋转
+                    const totalRotation = rotationY + (mouseX * 0.5);
+                    const cosR = Math.cos(totalRotation);
+                    const sinR = Math.sin(totalRotation);
+                    
+                    const rotatedX = x3d * cosR - z3d * sinR;
+                    const rotatedZ = z3d * cosR + x3d * sinR;
+                    
+                    // 3D 投影到 2D
+                    const scale = CONFIG.focalLength / (CONFIG.focalLength + rotatedZ + 200);
+                    
+                    this.projX = rotatedX * scale + width / 2;
+                    this.projY = this.y * scale + height / 2 + 50; // +50 稍微下移
+                    this.projSize = this.size * scale;
+                    this.projAlpha = this.alpha * (scale * 0.8); // 远处的变淡
+
+                    // 闪烁效果
+                    if(Math.random() > 0.95) {
+                        this.projSize *= 1.5;
+                        this.projAlpha = 1;
+                    }
+
+                } else {
+                    // 雪花下落
+                    this.y += this.vy;
+                    // 如果落到底部，重置到顶部
+                    if (this.y > height/2) {
+                        this.y = -height/2 - 50;
+                        this.x = (Math.random() - 0.5) * width * 1.5;
+                    }
+                    
+                    // 简单的3D投影，不随树旋转
+                    const scale = CONFIG.focalLength / (CONFIG.focalLength + this.z);
+                    this.projX = this.x * scale + width / 2;
+                    this.projY = this.y * scale + height / 2;
+                    this.projSize = this.size * scale;
+                    this.projAlpha = this.alpha;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                if (this.type === 'tree') {
+                    // 树粒子：使用发光效果
+                    ctx.fillStyle = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.projAlpha})`;
+                    ctx.arc(this.projX, this.projY, this.projSize, 0, Math.PI * 2);
+                } else {
+                    // 雪花：纯白微透
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.projAlpha})`;
+                    ctx.arc(this.projX, this.projY, this.projSize, 0, Math.PI * 2);
+                }
+                ctx.fill();
+            }
         }
-        setInterval(createSnow, 100);
+
+        // 顶部的星星
+        function drawTopStar(rY) {
+            const y = -height * CONFIG.treeHeight * 0.5 - 10;
+            // 投影位置
+            const scale = CONFIG.focalLength / (CONFIG.focalLength + 0 + 200); // z=0
+            const projX = width / 2;
+            const projY = y * scale + height / 2 + 50;
+            
+            // 绘制光晕
+            const gradient = ctx.createRadialGradient(projX, projY, 0, projX, projY, 40 * scale);
+            gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 215, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.2)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(projX, projY, 40 * scale, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制星芒
+            ctx.save();
+            ctx.translate(projX, projY);
+            ctx.rotate(Date.now() * 0.001); // 缓慢旋转
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            for(let i=0; i<4; i++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.moveTo(0, 0);
+                ctx.lineTo(2, -20 * scale);
+                ctx.lineTo(-2, -20 * scale);
+            }
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // 初始化粒子
+        function init() {
+            particles = [];
+            snowParticles = [];
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                particles.push(new Particle('tree'));
+            }
+            for (let i = 0; i < CONFIG.snowCount; i++) {
+                snowParticles.push(new Particle('snow'));
+            }
+        }
+
+        // 动画循环
+        let rotationY = 0;
+        function animate() {
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 使用 additive blending 增加发光感（高级感的关键）
+            ctx.globalCompositeOperation = 'lighter'; 
+
+            rotationY += 0.003; // 自动旋转速度
+
+            // 绘制雪花
+            snowParticles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // 绘制树 (先根据Z轴排序，保证遮挡关系正确，虽然在lighter模式下不那么重要，但习惯更好)
+            // 这里为了性能省略排序，直接利用lighter模式的叠加特性
+
+            particles.forEach(p => {
+                p.update(rotationY);
+                p.draw();
+            });
+
+            // 绘制顶部的星星
+            drawTopStar(rotationY);
+
+            // 恢复默认混合模式以绘制其他可能的UI（这里不需要）
+            ctx.globalCompositeOperation = 'source-over';
+
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+
     </script>
 </body>
 </html>

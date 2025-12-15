@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Woftom's Christmas Tree</title>
+    <style>
+        body {
+            background-color: #0d1b2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }
+        .container { text-align: center; position: relative; z-index: 10;}
+        h1 { margin-bottom: 20px; text-shadow: 0 0 10px #ffd700; }
+        
+        .tree {
+            position: relative;
+            width: 0; height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 100px solid #2d6a4f;
+            margin: 0 auto;
+        }
+        .tree:after {
+            content: ''; position: absolute; top: 80px; left: -70px;
+            width: 0; height: 0;
+            border-left: 70px solid transparent;
+            border-right: 70px solid transparent;
+            border-bottom: 120px solid #2d6a4f;
+        }
+        .tree:before {
+            content: ''; position: absolute; top: 180px; left: -90px;
+            width: 0; height: 0;
+            border-left: 90px solid transparent;
+            border-right: 90px solid transparent;
+            border-bottom: 140px solid #2d6a4f;
+        }
+        
+        /* 装饰彩灯 */
+        .light {
+            position: absolute;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            animation: blink 1s infinite alternate;
+        }
+        @keyframes blink { from {opacity: 0.5; box-shadow: 0 0 5px currentColor;} to {opacity: 1; box-shadow: 0 0 20px currentColor;} }
+        
+        /* 雪花 */
+        .snowflake {
+            position: absolute; top: -10px;
+            background: white; border-radius: 50%; opacity: 0.8;
+            animation: fall linear infinite;
+        }
+        @keyframes fall { to { transform: translateY(105vh); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Merry Christmas! <br> from Woftom</h1>
+        <div class="tree" id="tree"></div>
+    </div>
+
+    <script>
+        // 生成彩灯
+        const tree = document.getElementById('tree');
+        const colors = ['#ef233c', '#ffd700', '#3a86ff', '#8338ec'];
+        for(let i=0; i<15; i++) {
+            const light = document.createElement('div');
+            light.className = 'light';
+            light.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+            light.style.top = Math.random() * 250 + 'px';
+            light.style.left = (Math.random() * 80 - 40) + 'px';
+            light.style.animationDuration = (Math.random() + 0.5) + 's';
+            light.style.color = light.style.backgroundColor; //用于阴影颜色
+            tree.appendChild(light);
+        }
+
+        // 生成雪花
+        function createSnow() {
+            const snow = document.createElement('div');
+            snow.className = 'snowflake';
+            snow.style.left = Math.random() * 100 + 'vw';
+            snow.style.width = snow.style.height = (Math.random() * 5 + 2) + 'px';
+            snow.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            document.body.appendChild(snow);
+            setTimeout(() => snow.remove(), 5000);
+        }
+        setInterval(createSnow, 100);
+    </script>
+</body>
+</html>
